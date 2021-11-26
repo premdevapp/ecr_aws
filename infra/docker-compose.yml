@@ -1,0 +1,63 @@
+version: "3.3"
+
+services:
+  proxy:
+    image: 414600640364.dkr.ecr.us-east-1.amazonaws.com/testrunzproxy:latest
+    container_name: myapp-node-proxy
+    restart: always
+    ports:
+      - 80:80
+    networks:
+      app-network:
+        ipv4_address: 172.20.0.4
+  mongo:
+    image: mongo
+    volumes:
+      - data-volume:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      app-network:
+        ipv4_address: 172.20.0.5
+  server:
+    image: 414600640364.dkr.ecr.us-east-1.amazonaws.com/testrunzserver:latest
+    container_name: myapp-node-server
+    command: /usr/src/app/node_modules/.bin/nodemon server.js
+    volumes:
+      - /usr/src/app/node_modules
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongo
+    environment:
+      - NODE_ENV=development
+    networks:
+      app-network:
+        ipv4_address: 172.20.0.3
+  client:
+    image: 414600640364.dkr.ecr.us-east-1.amazonaws.com/testrunzclient:2
+    container_name: myapp-react-client
+    command: /usr/src/app/node_modules/.bin/nodemon app.js
+    volumes:
+      - /usr/src/app/node_modules
+    depends_on:
+      - server
+    ports:
+      - "3000:3000"
+    networks:
+      app-network:
+        ipv4_address: 172.20.0.2
+
+
+networks:
+  app-network:
+    ipam: 
+      config:
+        - subnet: 172.20.0.0/24
+        
+
+volumes:
+  data-volume:
+  node_modules:
+  web-root:
+    driver: local
